@@ -20,7 +20,7 @@
 #include <limits.h>
 #include <stdint.h>
 
-#define LIMIT 16
+#define LIMIT 24
 
 void compress(char *in, char *out)
 {
@@ -29,7 +29,7 @@ void compress(char *in, char *out)
 	uint32_t status = 0;
 	FILE *in_file = fopen(in, "rb");
 	FILE *out_file = fopen(out, "wb");
-	char cur;
+	int cur;
 //	char in_buffer[4096];
 //	char out_buffer[4096];
 	int i;
@@ -53,16 +53,17 @@ void compress(char *in, char *out)
 					model[temp][1] = 128;
 					model[temp][0] /= 2;
 				}
+				status = (status << 1) + 1;
 			} else {
 				temp = status % (1 << LIMIT);
 				rate = (model[temp][0] + 1) * 1.0 / (model[temp][0] + 1 + model[temp][1] + 1);
 				high = low + (high - low) * rate;
 				if (!(++model[temp][0])) {
-					model[temp][0] = 1 << 7;
+					model[temp][0] = 128;
 					model[temp][1] /= 2;
 				}
+				status <<= 1;
 			}
-			status = (status << 1) + (1 & (cur >> i));
 			
 			while ((high / (1 << 24)) == (low / (1 << 24))) {
 				fputc((uint8_t)(high >> 24), out_file);
@@ -122,7 +123,7 @@ void decompress(char *in, char *out)
 			if (!(++model[temp][1])) {
 				model[temp][1] = 128;
 				model[temp][0] /= 2;
-			}
+			} 
 			status = (status << 1) + 1;
 			out_char |= 1 << (pos++);
 		} else {
@@ -130,7 +131,7 @@ void decompress(char *in, char *out)
 			if (!(++model[temp][0])) {
 				model[temp][0] = 128;
 				model[temp][1] /= 2;
-			}
+			} 
 			status <<= 1;
 			out_char &= ~(1 << (pos++));
 		}
