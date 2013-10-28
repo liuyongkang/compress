@@ -44,7 +44,7 @@ void compress(char *in, char *out)
 		for (i = 0; i != 8; ++i) {
 			if (1 & (cur >> i)) { 		// 分离每一位
 				temp = status % (1 << LIMIT);
-				rate = (model[temp][0] + 1) * 1.0 / (model[temp][0] + 1 + model[temp][1] + 1);
+				rate = (model[temp][0] * 64 + 1) * 1.0 / (model[temp][0] * 64 + 1 + model[temp][1] * 64 + 1);
 				low += (high - low) * rate + 1;
 				if (!(++model[temp][1])) { 	// 溢出
 					model[temp][1] = 128;
@@ -53,7 +53,7 @@ void compress(char *in, char *out)
 				status = (status << 1) + 1;
 			} else {
 				temp = status % (1 << LIMIT);
-				rate = (model[temp][0] + 1) * 1.0 / (model[temp][0] + 1 + model[temp][1] + 1);
+				rate = (model[temp][0] * 64 + 1) * 1.0 / (model[temp][0] * 64 + 1 + model[temp][1] * 64 + 1);
 				high = low + (high - low) * rate;
 				if (!(++model[temp][0])) { 	// 溢出
 					model[temp][0] = 128;
@@ -108,7 +108,7 @@ void decompress(char *in, char *out)
 		}
 
 		temp = status % (1 << LIMIT);
-		rate = (model[temp][0] + 1) * 1.0 / (model[temp][0] + 1 + model[temp][1] + 1);
+		rate = (model[temp][0] * 64 + 1) * 1.0 / (model[temp][0] * 64 + 1 + model[temp][1] * 64 + 1);
 		mid = low + (high - low) * rate;
 		if (cur > mid) {
 			if (!(++model[temp][1])) {
