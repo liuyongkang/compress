@@ -150,15 +150,16 @@ int main(int argc, char **argv)
 		if (strcmp(argv[1], "e") == 0) {
 			compress(argv[2], argv[3]);
 			e = clock();
-			printf("%f\n", ((double)(e - s)) / CLOCKS_PER_SEC);
+			printf("%fs\n", ((double)(e - s)) / CLOCKS_PER_SEC);
 		} else if (strcmp(argv[1], "d") == 0) {
 			decompress(argv[2], argv[3]);
 			e = clock();
-			printf("%f\n", ((double)(e - s)) / CLOCKS_PER_SEC);
+			printf("%fs\n", ((double)(e - s)) / CLOCKS_PER_SEC);
 		} else {
 			printf("usage: e/d infile outfile\n");
 		}
 	} else {
+		printf("usage: e/d infile outfile\n");
 	}
 
 	return 0;
