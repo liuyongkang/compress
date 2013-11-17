@@ -23,14 +23,15 @@
 
 #define LIMIT 24
 
+uint8_t model[1 << LIMIT][2] = {{0}};
+
 void compress(char *in, char *out)
 {
-	uint8_t model[1 << LIMIT][2] = {{0}};
 	uint32_t low = 0, high = UINT32_MAX;
 	uint32_t status = 0;
 	FILE *in_file = fopen(in, "rb");
 	FILE *out_file = fopen(out, "wb");
-	int cur;
+	int in_char;
 	int i;
 	int temp;
 	uint32_t len = 0;
@@ -38,11 +39,11 @@ void compress(char *in, char *out)
 
 	fwrite(&len, sizeof(len), 1, out_file); 	// 给写文件大小留下四个字节
 
-	while ((cur = fgetc(in_file)) != EOF) {
+	while ((in_char = fgetc(in_file)) != EOF) {
 		++len;
 	
 		for (i = 0; i != 8; ++i) {
-			if (1 & (cur >> i)) { 		// 分离每一位
+			if (0x80 & (in_char << i)) { 		// 分离每一位
 				temp = status % (1 << LIMIT);
 				rate = (model[temp][0] * 64 + 1) * 1.0 / (model[temp][0] * 64 + 1 + model[temp][1] * 64 + 1);
 				low += (high - low) * rate + 1;
@@ -62,7 +63,7 @@ void compress(char *in, char *out)
 				status <<= 1;
 			}
 			
-			while ((high / (1 << 24)) == (low / (1 << 24))) { 	// 首字节相同，进行放大
+			while (high >> 24 == low >> 24) { 	// 首字节相同，进行放大
 				fputc((uint8_t)(high >> 24), out_file);
 				low <<= 8;
 				high = (high << 8) + 255;
@@ -84,7 +85,6 @@ void compress(char *in, char *out)
 
 void decompress(char *in, char *out)
 {
-	uint8_t model[1 << LIMIT][2] = {{0}};
 	uint32_t low = 0, mid, high = 0;
 	uint32_t cur = 0;
 	uint32_t status = 0;
@@ -97,10 +97,10 @@ void decompress(char *in, char *out)
 	unsigned char in_char;
 	double rate;
 
-	fread(&len, sizeof(uint32_t), 1, in_file);
+	fread(&len, sizeof(len), 1, in_file);
 	
 	while (1) {
-		while (high / (1 << 24) == low / (1 << 24)) {
+		while (high >> 24 == low >> 24) {
 			in_char = fgetc(in_file);
 			cur = (cur << 8) | (uint32_t)in_char;
 			low <<= 8;
@@ -117,7 +117,7 @@ void decompress(char *in, char *out)
 			} 
 			low = mid + 1;
 			status = (status << 1) + 1;
-			out_char |= 1 << (pos++);
+			out_char |= 1 << (7 - (pos++));
 		} else {
 			if (!(++model[temp][0])) {
 				model[temp][0] = 128;
@@ -125,7 +125,7 @@ void decompress(char *in, char *out)
 			} 
 			high = mid;
 			status <<= 1;
-			out_char &= ~(1 << (pos++));
+			out_char &= ~(1 << (7 - (pos++)));
 		}
 
 		if (pos == 8) {
