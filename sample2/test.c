@@ -23,13 +23,17 @@
 #include <stdint.h>
 #include <limits.h>
 
+#define MEM 1 << 20
+
 struct node {
 	uint32_t count[2];
 	struct node *next[2];
 };
 
 struct node nodes[256][256];
-struct node *p = &nodes[0][0];
+struct node *p;
+struct node model[MEM];
+int num;
 
 void node_init()
 {
@@ -39,8 +43,8 @@ void node_init()
 		for (j = 0; j != 127; ++j) {
 			nodes[i][j].count[0] = 0;
 			nodes[i][j].count[1] = 0;
-			nodes[i][j].next[0] = &nodes[i][j * 2];
-			nodes[i][j].next[1] = &nodes[i][j * 2 + 1];
+			nodes[i][j].next[0] = &nodes[i][j * 2 + 1];
+			nodes[i][j].next[1] = &nodes[i][j * 2 + 2];
 		}
 		for (; j != 255; ++j) {
 			nodes[i][j].count[0] = 0;
@@ -49,6 +53,11 @@ void node_init()
 			nodes[i][j].next[1] = &nodes[j * 2 - 253][0];
 		}
 	}
+	
+	p = &nodes[0][0];
+	num = 0;
+
+	printf("\n");
 }
 
 double node_predict()
@@ -58,8 +67,29 @@ double node_predict()
 
 void node_update(int bit)
 {
+	struct node *new_node;
+	double rate;
+
+	if (p->count[bit] > 1 && p->next[bit]->count[0] + p->next[bit]->count[1] > p->count[bit] + 1) {
+		
+		new_node = &model[num++];
+		rate = p->count[bit] * 1.0 / (p->next[bit]->count[0] + p->next[bit]->count[1]);
+		new_node->count[0] = p->next[bit]->count[0] * rate;
+		new_node->count[1] = p->next[bit]->count[1] * rate;
+		new_node->next[0] = p->next[bit]->next[0];
+		new_node->next[1] = p->next[bit]->next[1];
+
+		p->next[bit]->count[0] -= new_node->count[0];
+		p->next[bit]->count[1] -= new_node->count[1];
+		p->next[bit] = new_node;
+	}
+	
 	++p->count[bit];
 	p = p->next[bit];
+
+	if (num == MEM) {
+		node_init();
+	}
 }
 
 void compress(char *in, char *out)
