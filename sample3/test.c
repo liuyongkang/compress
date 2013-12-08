@@ -22,6 +22,7 @@
 #include <string.h>
 
 #define MAX_ALPHA_SIZE 258
+#define SYMBOLS        256
 #define MAX_CODE_LEN   23
 #define True           1
 #define False          0
@@ -33,7 +34,7 @@
 
 #define ADDWEIGHTS(zw1,zw2)                                     \
 	(WEIGHTOF(zw1)+WEIGHTOF(zw2)) |                         \
-(1 + MYMAX(DEPTHOF(zw1),DEPTHOF(zw2)))
+	(1 + MYMAX(DEPTHOF(zw1),DEPTHOF(zw2)))
 
 #define UPHEAP(z)                                               \
 {                                                               \
@@ -145,7 +146,7 @@ void assignCodes (int *code,
 		vec <<= 1;
 	}
 
-	for (i = 0; i < 256; i++) {
+	for (i = 0; i < alphaSize; i++) {
 		t1 = 0;
 		t2 = length[i] - 1;
 		while (t1 < t2) {
@@ -230,11 +231,11 @@ void compress()
 			freq[in_buffer[i]]++;
 		}
 
-		makeCodeLengths(length, freq, 256, MAX_LEN);
+		makeCodeLengths(length, freq, SYMBOLS, MAX_LEN);
 
 		min_len = 16;
 		max_len = 1;
-		for (i = 0; i < 256; ++i) {
+		for (i = 0; i < SYMBOLS; ++i) {
 			if (length[i] < min_len) {
 				min_len = length[i];
 			}
@@ -243,9 +244,9 @@ void compress()
 			}
 		}
 		
-		assignCodes(code, length, min_len, max_len, 256);
+		assignCodes(code, length, min_len, max_len, SYMBOLS);
 
-		for (i = 0; i < 256; i += 2) {
+		for (i = 0; i < SYMBOLS; i += 2) {
 			out_buffer[out_len++] = length[i] * 16 + length[i + 1];
 		}
 
@@ -300,7 +301,7 @@ void decompress()
 		in_pos = 0;
 		out_pos = 0;
 
-		for (i = 0; i < 256; i += 2) {
+		for (i = 0; i < SYMBOLS; i += 2) {
 			length[i] = in_buffer[in_pos] / 16;
 			length[i + 1] = in_buffer[in_pos] % 16;
 			in_pos++;
@@ -308,7 +309,7 @@ void decompress()
 
 		min_len = 16;
 		max_len = 1;
-		for (i = 0; i < 256; ++i) {
+		for (i = 0; i < SYMBOLS; ++i) {
 			if (length[i] < min_len) {
 				min_len = length[i];
 			}
@@ -317,9 +318,9 @@ void decompress()
 			}
 		}
 		
-		assignCodes(code, length, min_len, max_len, 256);
+		assignCodes(code, length, min_len, max_len, SYMBOLS);
 
-		makeDecode(length, code, decode, 256);
+		makeDecode(length, code, decode, SYMBOLS);
 
 		cur_code = 0;
 		cur_len = 0;
